@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-cd /data/openbmc-virtual-server
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "${LAB_DIR:-$project_dir}"
 mkdir -p state/debian
 cd state/debian
 if [ -e base.qcow2 ] || [ -e host.qcow2 ]; then

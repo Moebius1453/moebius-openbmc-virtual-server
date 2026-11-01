@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-cd /data/openbmc-virtual-server/state/debian
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "${LAB_DIR:-$project_dir}/state/debian"
 keyfile=${1:?Supply a public SSH key file as the first argument}
 key=$(cat "$keyfile")
 case "$key" in

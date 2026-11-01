@@ -10,7 +10,7 @@ RUN printf '%s\n' \
       > /etc/apt/sources.list.d/ubuntu.sources \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-      build-essential chrpath cpio debianutils diffstat file gawk gcc git \
+      build-essential chrpath cpio debianutils diffstat file gawk gcc git git-lfs \
       iputils-ping libacl1 locales lz4 patch python3 python3-git python3-jinja2 \
       python3-pexpect python3-pip socat texinfo unzip wget xz-utils zstd \
       ca-certificates bzip2 libssl-dev \

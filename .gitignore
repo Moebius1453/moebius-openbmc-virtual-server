@@ -4,3 +4,7 @@ state/
 *.iso
 *.log
 .env
+.env.*
+!.env.example
+*.bak-*
+__pycache__/
