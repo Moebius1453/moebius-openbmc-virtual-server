@@ -1,0 +1,25 @@
+Subject: [PATCH] max31785: honor RPM mode when updating fan speed
+
+Upstream-Status: Pending
+
+--- a/hw/sensor/max31785.c
++++ b/hw/sensor/max31785.c
+@@ -341,9 +341,15 @@
+     case PMBUS_FAN_COMMAND_1:
+         if (pmdev->page <= MAX31785_MAX_FAN_PAGE) {
+             pmdev->pages[pmdev->page].fan_command_1 = pmbus_receive16(pmdev);
+-            pmdev->pages[pmdev->page].read_fan_speed_1 =
+-                ((MAX31785_DEFAULT_FAN_SPEED / MAX31785_DEFAULT_FAN_MAX_PWM) *
+-                pmdev->pages[pmdev->page].fan_command_1);
++            if (pmdev->pages[pmdev->page].fan_config_1_2 &
++                MAX31785_FAN_CONFIG_RPM_PWM) {
++                pmdev->pages[pmdev->page].read_fan_speed_1 =
++                    pmdev->pages[pmdev->page].fan_command_1;
++            } else {
++                pmdev->pages[pmdev->page].read_fan_speed_1 =
++                    ((MAX31785_DEFAULT_FAN_SPEED / MAX31785_DEFAULT_FAN_MAX_PWM) *
++                    pmdev->pages[pmdev->page].fan_command_1);
++            }
+         }
+         break;
+ 
