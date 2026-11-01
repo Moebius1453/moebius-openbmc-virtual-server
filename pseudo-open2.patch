@@ -1,0 +1,46 @@
+From: Richard Purdie <richard.purdie@linuxfoundation.org>
+Subject: [PATCH] ports/linux: Add missing __open_2 wrapper
+Upstream-Status: Backport [https://lists.yoctoproject.org/g/yocto-patches/message/3755]
+
+Somehow we've missed the wrapper for __open_2 for far too long (over a decade!).
+It can be called from useradd in shadow, so add the missing wrapper. We already
+have the similar __openat_2 wrapper.
+
+Signed-off-by: Richard Purdie <richard.purdie@linuxfoundation.org>
+---
+ ports/linux/guts/__open_2.c | 15 +++++++++++++++
+ ports/linux/wrapfuncs.in    |  1 +
+ 2 files changed, 16 insertions(+)
+ create mode 100644 ports/linux/guts/__open_2.c
+
+diff --git a/ports/linux/guts/__open_2.c b/ports/linux/guts/__open_2.c
+new file mode 100644
+index 0000000..7e54c8f
+--- /dev/null
++++ b/ports/linux/guts/__open_2.c
+@@ -0,0 +1,15 @@
++/*
++ * Copyright (c) 2026 Richard Purdie
++ *
++ * SPDX-License-Identifier: LGPL-2.1-only
++ *
++ * static int
++ * wrap___open_2(const char *path, int flags) {
++ *	int rc = -1;
++ */
++
++	rc = wrap_open(path, flags, 0);
++
++/*	return rc;
++ * }
++ */
+diff --git a/ports/linux/wrapfuncs.in b/ports/linux/wrapfuncs.in
+index 234a13c..0e275d5 100644
+--- a/ports/linux/wrapfuncs.in
++++ b/ports/linux/wrapfuncs.in
+@@ -1,4 +1,5 @@
+ int open(const char *path, int flags, ...{mode_t mode}); /* flags=((flags&O_NOFOLLOW)||((flags&(O_CREAT|O_EXCL))==(O_CREAT|O_EXCL))), noignore_path=1 */
++int __open_2(const char *path, int flags); /* flags=((flags&O_NOFOLLOW)||((flags&(O_CREAT|O_EXCL))==(O_CREAT|O_EXCL))), noignore_path=1 */
+ char *get_current_dir_name(void);
+ int __xstat(int ver, const char *path, struct stat *buf);
+ int __lxstat(int ver, const char *path, struct stat *buf); /* flags=AT_SYMLINK_NOFOLLOW */

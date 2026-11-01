@@ -1,0 +1,6 @@
+state/
+*.qcow2
+*.mtd
+*.iso
+*.log
+.env

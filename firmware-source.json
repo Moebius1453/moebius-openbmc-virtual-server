@@ -1,0 +1,15 @@
+{
+  "purpose": "Initial Witherspoon boot validation, not the final development firmware",
+  "machine": "witherspoon-bmc",
+  "firmware": {
+    "build": "20240618035022",
+    "url": "https://raw.githubusercontent.com/legoater/qemu-aspeed-boot/master/images/witherspoon-bmc/openbmc-20240618035022/obmc-phosphor-image-witherspoon-20240618035022.ubi.mtd",
+    "size_bytes": 33554432,
+    "sha256": "937d9ed449ea6c6cbed983519088a42d0cafe276bcfe4fce07772ca6673f9213"
+  },
+  "reference": "https://github.com/qemu/qemu/blob/v10.0.0/tests/functional/test_arm_aspeed_witherspoon.py",
+  "runtime": {
+    "base": "debian:13",
+    "qemu": "Debian packaged version; record actual version and image digest after build"
+  }
+}

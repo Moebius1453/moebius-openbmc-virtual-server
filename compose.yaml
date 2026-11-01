@@ -1,0 +1,41 @@
+name: moebius-openbmc-virtual-server
+
+services:
+  server:
+    build: .
+    image: moebius-openbmc-virtual-server:dev
+    user: "1000:1000"
+    cpus: 4
+    mem_limit: 6g
+    pids_limit: 256
+    restart: "no"
+    stop_grace_period: 90s
+    stdin_open: true
+    tty: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    ports:
+      - "127.0.0.1:2240:2222"
+      - "127.0.0.1:2440:2443"
+    volumes:
+      - ./state:/lab/state
+    tmpfs:
+      - /run/lab:size=16m,mode=0700,uid=1000,gid=1000
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command:
+      - qemu-system-arm
+      - -M
+      - witherspoon-bmc
+      - -drive
+      - file=/lab/state/bmc.mtd,if=mtd,format=raw
+      - -nic
+      - user,hostfwd=tcp:0.0.0.0:2222-:22,hostfwd=tcp:0.0.0.0:2443-:443
+      - -qmp
+      - unix:/run/lab/bmc.qmp,server=on,wait=off
+      - -nographic
