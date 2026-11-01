@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+FROM moebius-openbmc-virtual-server:dev
+
+USER root
+COPY --from=qemu-rpm / /opt/qemu-rpm/
+RUN cd /opt/qemu-rpm \
+    && sha256sum -c SHA256SUMS \
+    && install -m 0755 qemu-system-arm /usr/local/bin/qemu-system-arm \
+    && /usr/local/bin/qemu-system-arm --version
+COPY src/lab_manager.py /lab/lab_manager.py
+COPY scripts/adapt_virtual_bmc.sh /lab/adapt_virtual_bmc.sh
+COPY config/fan-monitor-single-tach.json /lab/fan-monitor-single-tach.json
+USER 1000:1000
+CMD ["python3", "-u", "/lab/lab_manager.py"]
