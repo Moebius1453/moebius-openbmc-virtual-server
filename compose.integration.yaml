@@ -1,7 +1,7 @@
 name: moebius-openbmc-integration
 services:
   server:
-    image: moebius-openbmc-virtual-server:dev
+    image: moebius-openbmc-virtual-server:integration-rpm
     user: "1000:1000"
     group_add:
       - "${KVM_GID:?Set KVM_GID to the host kvm device group}"
@@ -20,7 +20,6 @@ services:
       - "127.0.0.1:2261:2223"
     volumes:
       - ./state:/lab/state
-      - ./src/lab_manager.py:/lab/lab_manager.py:ro
     tmpfs:
       - /run/lab:size=16m,mode=0700,uid=1000,gid=1000
     command: ["python3", "-u", "/lab/lab_manager.py"]

@@ -5,6 +5,7 @@ artifact_dir=$(realpath "${1:?Supply the exported QEMU artifact directory}")
 image=${2:-moebius-openbmc-virtual-server:integration-rpm}
 test -f "$artifact_dir/qemu-system-arm"
 test -f "$artifact_dir/max31785-rpm-mode.patch"
+test -f "$artifact_dir/max31785-status-byte.patch"
 test -f "$artifact_dir/SHA256SUMS"
 (
     cd "$artifact_dir"

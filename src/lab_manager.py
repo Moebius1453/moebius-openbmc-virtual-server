@@ -16,6 +16,7 @@ class QMP:
     def __init__(self, path):
         self.sock = socket.socket(socket.AF_UNIX)
         self.sock.settimeout(3)
+        self.reset_seen = False
         try:
             self.sock.connect(str(path))
             self.file = self.sock.makefile('rwb', buffering=0)
@@ -38,6 +39,8 @@ class QMP:
         self.file.write((json.dumps(message) + '\n').encode())
         while True:
             response = self.read()
+            if response.get('event') == 'RESET':
+                self.reset_seen = True
             if 'error' in response:
                 raise RuntimeError(str(response['error']))
             if 'return' in response:
@@ -124,7 +127,10 @@ def main():
     last_request = False
     last_good = None
     previous_reset = None
+    previous_shutdown = False
+    last_shutdown_done = None
     error_since = None
+    recovering_bmc = False
     try:
         while not stopping:
             if host is not None and host.poll() is not None:
@@ -137,20 +143,50 @@ def main():
                     client = None
                 time.sleep(1)
                 bmc = start_bmc()
+                recovering_bmc = host is not None
+                previous_reset = None
+                previous_shutdown = False
+                last_shutdown_done = None
+                last_request = False
                 last_good = None
             try:
                 if client is None:
                     client = QMP(RUNTIME / 'bmc.qmp')
                     last_good = None
+                    last_shutdown_done = None
                 request = client.call('qom-get', path=GPIO_PATH, property='gpioD1')
                 reset = client.call('qom-get', path=GPIO_PATH, property='gpioA1')
+                shutdown = client.call('qom-get', path=GPIO_PATH, property='gpioD3')
+                if client.reset_seen:
+                    client.reset_seen = False
+                    recovering_bmc = host is not None
+                    previous_reset = None
+                    previous_shutdown = False
+                    last_shutdown_done = None
+                    last_request = False
+                    last_good = None
+                    log('bmc_reset_detected', host_present=host is not None)
+                    time.sleep(0.25)
+                    continue
+                if recovering_bmc and request:
+                    recovering_bmc = False
+                    previous_reset = reset
+                    log('bmc_power_output_recovered')
                 if request and not last_request and host is None:
                     host = start_host()
-                if not request and host is not None:
+                if not request and host is not None and not recovering_bmc:
                     log('host_power_removed')
                     end_process(host, RUNTIME / 'host.qmp')
                     host = None
-                if host is not None and previous_reset is True and reset is False:
+                if shutdown and not previous_shutdown and host is not None:
+                    host_qmp = QMP(RUNTIME / 'host.qmp')
+                    try:
+                        host_qmp.call('system_powerdown')
+                    finally:
+                        host_qmp.close()
+                    log('host_graceful_shutdown_requested')
+                if (host is not None and not recovering_bmc
+                        and previous_reset is True and reset is False):
                     host_qmp = QMP(RUNTIME / 'host.qmp')
                     try:
                         host_qmp.call('system_reset')
@@ -161,15 +197,22 @@ def main():
                 if host is not None and host.poll() is None:
                     host_qmp = QMP(RUNTIME / 'host.qmp')
                     try:
-                        good = host_qmp.call('query-status')['running']
+                        status = host_qmp.call('query-status')['status']
+                        good = status != 'shutdown'
                     finally:
                         host_qmp.close()
                 if good != last_good:
                     client.call('qom-set', path=GPIO_PATH, property='gpioD2', value=good)
                     log('power_good', value=good)
                     last_good = good
+                shutdown_done = shutdown and host is None
+                if shutdown_done != last_shutdown_done:
+                    client.call('qom-set', path=GPIO_PATH, property='gpioD4',
+                                value=shutdown_done)
+                    last_shutdown_done = shutdown_done
                 last_request = request
                 previous_reset = reset
+                previous_shutdown = shutdown
                 error_since = None
             except (OSError, ValueError, RuntimeError) as exc:
                 if error_since is None:
