@@ -1,0 +1,18 @@
+Subject: [PATCH] max31785: return one byte for STATUS_FANS_1_2
+
+STATUS_FANS_1_2 is a byte register. Sending a word leaves a byte in
+PMBusDevice.out_buf after a normal SMBus byte read. The next word read
+then consumes that stale byte before the fan speed response.
+
+Upstream-Status: Pending
+
+--- a/hw/sensor/max31785.c
++++ b/hw/sensor/max31785.c
+@@ -192,5 +192,5 @@
+     case PMBUS_STATUS_FANS_1_2:
+         if (pmdev->page <= MAX31785_MAX_FAN_PAGE) {
+-            pmbus_send16(pmdev, pmdev->pages[pmdev->page].status_fans_1_2);
++            pmbus_send8(pmdev, pmdev->pages[pmdev->page].status_fans_1_2);
+         }
+         break;
+
