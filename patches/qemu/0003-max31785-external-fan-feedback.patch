@@ -1,0 +1,99 @@
+--- a/hw/sensor/max31785.c
++++ b/hw/sensor/max31785.c
+@@ -146,6 +146,8 @@
+ /* Place holder to save the max31785 mfr specific registers */
+ typedef struct MAX31785State {
+     PMBusDevice parent;
++    bool external_fan_feedback;
++    uint16_t fan_target[MAX31785_FAN_PAGES];
+     uint16_t mfr_mode[MAX31785_TOTAL_NUM_PAGES];
+     uint16_t vout_peak[MAX31785_TOTAL_NUM_PAGES];
+     uint16_t temperature_peak[MAX31785_TOTAL_NUM_PAGES];
+@@ -341,6 +343,7 @@
+     case PMBUS_FAN_COMMAND_1:
+         if (pmdev->page <= MAX31785_MAX_FAN_PAGE) {
+             pmdev->pages[pmdev->page].fan_command_1 = pmbus_receive16(pmdev);
++            uint16_t previous = pmdev->pages[pmdev->page].read_fan_speed_1;
+             if (pmdev->pages[pmdev->page].fan_config_1_2 &
+                 MAX31785_FAN_CONFIG_RPM_PWM) {
+                 pmdev->pages[pmdev->page].read_fan_speed_1 =
+@@ -350,6 +353,11 @@
+                     ((MAX31785_DEFAULT_FAN_SPEED / MAX31785_DEFAULT_FAN_MAX_PWM) *
+                     pmdev->pages[pmdev->page].fan_command_1);
+             }
++            s->fan_target[pmdev->page] =
++                pmdev->pages[pmdev->page].read_fan_speed_1;
++            if (s->external_fan_feedback) {
++                pmdev->pages[pmdev->page].read_fan_speed_1 = previous;
++            }
+         }
+         break;
+ 
+@@ -563,11 +571,66 @@
+     rc->phases.exit = max31785_exit_reset;
+ }
+ 
++static bool max31785_get_external(Object *obj, Error **errp)
++{
++    return MAX31785(obj)->external_fan_feedback;
++}
++
++static void max31785_set_external(Object *obj, bool value, Error **errp)
++{
++    MAX31785(obj)->external_fan_feedback = value;
++}
++
++static void max31785_get_target(Object *obj, Visitor *v, const char *name,
++                               void *opaque, Error **errp)
++{
++    unsigned page = (uintptr_t)opaque;
++    uint16_t value = MAX31785(obj)->fan_target[page];
++    visit_type_uint16(v, name, &value, errp);
++}
++
++static void max31785_get_actual(Object *obj, Visitor *v, const char *name,
++                               void *opaque, Error **errp)
++{
++    unsigned page = (uintptr_t)opaque;
++    uint16_t value = PMBUS_DEVICE(obj)->pages[page].read_fan_speed_1;
++    visit_type_uint16(v, name, &value, errp);
++}
++
++static void max31785_set_actual(Object *obj, Visitor *v, const char *name,
++                               void *opaque, Error **errp)
++{
++    unsigned page = (uintptr_t)opaque;
++    uint16_t value;
++    if (!MAX31785(obj)->external_fan_feedback) {
++        error_setg(errp, "External fan feedback is disabled");
++        return;
++    }
++    if (visit_type_uint16(v, name, &value, errp)) {
++        PMBUS_DEVICE(obj)->pages[page].read_fan_speed_1 = value;
++    }
++}
++
++static void max31785_feedback_init(Object *obj)
++{
++    max31785_init(obj);
++    object_property_add_bool(obj, "external-fan-feedback",
++                             max31785_get_external, max31785_set_external);
++    for (unsigned i = 0; i < MAX31785_FAN_PAGES; i++) {
++        g_autofree char *target = g_strdup_printf("fan%u-target", i);
++        g_autofree char *actual = g_strdup_printf("fan%u-actual", i);
++        object_property_add(obj, target, "uint16", max31785_get_target,
++                            NULL, NULL, (void *)(uintptr_t)i);
++        object_property_add(obj, actual, "uint16", max31785_get_actual,
++                            max31785_set_actual, NULL, (void *)(uintptr_t)i);
++    }
++}
++
+ static const TypeInfo max31785_info = {
+     .name = TYPE_MAX31785,
+     .parent = TYPE_PMBUS_DEVICE,
+     .instance_size = sizeof(MAX31785State),
+-    .instance_init = max31785_init,
++    .instance_init = max31785_feedback_init,
+     .class_init = max31785_class_init,
+ };
+ 

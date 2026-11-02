@@ -131,6 +131,10 @@ def main():
     last_shutdown_done = None
     error_since = None
     recovering_bmc = False
+    thermal = None
+    if os.environ.get('LAB_THERMAL') == '1':
+        from thermal_bridge import ThermalBridge
+        thermal = ThermalBridge(STATE)
     try:
         while not stopping:
             if host is not None and host.poll() is not None:
@@ -210,6 +214,11 @@ def main():
                     client.call('qom-set', path=GPIO_PATH, property='gpioD4',
                                 value=shutdown_done)
                     last_shutdown_done = shutdown_done
+                if thermal is not None:
+                    try:
+                        thermal.step(client, good)
+                    except (OSError, ValueError, RuntimeError, KeyError) as exc:
+                        log('thermal_error', error=str(exc))
                 last_request = request
                 previous_reset = reset
                 previous_shutdown = shutdown

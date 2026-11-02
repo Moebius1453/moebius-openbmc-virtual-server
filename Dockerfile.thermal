@@ -1,0 +1,8 @@
+FROM moebius-openbmc-virtual-server:replay-12c04e4
+USER root
+COPY --from=qemu-thermal / /opt/qemu-thermal/
+RUN cd /opt/qemu-thermal && sha256sum -c SHA256SUMS && install -m 0755 qemu-system-arm /usr/local/bin/qemu-system-arm
+COPY src/lab_manager.py src/thermal_bridge.py src/thermal_model.py /lab/
+USER 1000:1000
+ENV LAB_THERMAL=1
+CMD ["python3", "-u", "/lab/lab_manager.py"]

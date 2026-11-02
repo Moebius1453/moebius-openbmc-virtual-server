@@ -1,0 +1,30 @@
+name: moebius-openbmc-replay
+services:
+  server:
+    image: "${LAB_IMAGE:?Set an explicitly built integration image tag}"
+    user: "1000:1000"
+    group_add:
+      - "${KVM_GID:?Set the host kvm device group}"
+    devices:
+      - /dev/kvm:/dev/kvm
+    cpus: 4
+    mem_limit: 6g
+    pids_limit: 256
+    restart: "no"
+    stop_grace_period: 90s
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    ports:
+      - "127.0.0.1:${BMC_SSH_PORT:-2270}:2222"
+      - "127.0.0.1:${BMC_HTTPS_PORT:-2470}:2443"
+      - "127.0.0.1:${HOST_SSH_PORT:-2271}:2223"
+    volumes:
+      - "${LAB_STATE:?Set a new independent absolute state directory}:/lab/state"
+    tmpfs:
+      - /run/lab:size=16m,mode=0700,uid=1000,gid=1000
+    command: ["python3", "-u", "/lab/lab_manager.py"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
