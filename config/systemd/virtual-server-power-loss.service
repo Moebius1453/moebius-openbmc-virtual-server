@@ -1,0 +1,13 @@
+[Unit]
+Description=Reconcile virtual host power loss through native chassis control
+Requires=org.openbmc.control.Power@0.service xyz.openbmc_project.State.Chassis@0.service
+After=org.openbmc.control.Power@0.service xyz.openbmc_project.State.Chassis@0.service
+
+[Service]
+Type=simple
+ExecStart=/bin/sh /var/lib/virtual-server-adaptation/reconcile-power-loss.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

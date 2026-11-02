@@ -1,0 +1,12 @@
+[Unit]
+Description=Restore virtual chassis power latch from actual PowerGood
+Requires=org.openbmc.control.Power@0.service
+After=org.openbmc.control.Power@0.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /var/lib/virtual-server-adaptation/restore-power-output.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

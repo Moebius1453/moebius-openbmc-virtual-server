@@ -9,7 +9,8 @@ RUN cd /opt/qemu-rpm \
     && /usr/local/bin/qemu-system-arm --version
 COPY src/lab_manager.py /lab/lab_manager.py
 COPY scripts/adapt_virtual_bmc.sh /lab/adapt_virtual_bmc.sh
-COPY scripts/bmc-soft-poweroff.sh /lab/bmc-soft-poweroff.sh
+COPY scripts/bmc-soft-poweroff.sh scripts/bmc-restore-power-output.sh scripts/bmc-reconcile-power-loss.sh /lab/adaptation/scripts/
+COPY config/systemd/ /lab/adaptation/config/systemd/
 COPY config/fan-monitor-single-tach.json /lab/fan-monitor-single-tach.json
 USER 1000:1000
 CMD ["python3", "-u", "/lab/lab_manager.py"]
