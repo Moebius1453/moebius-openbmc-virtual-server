@@ -1,0 +1,10 @@
+ARG THERMAL_BASE=moebius-openbmc-virtual-server:thermal-test
+FROM ${THERMAL_BASE}
+USER root
+COPY --from=fan-x86 / /opt/fan-x86/
+RUN cd /opt/fan-x86 && sha256sum -c SHA256SUMS && test -f phosphor-fan-control.stripped
+COPY src/lab_manager.py src/thermal_bridge.py src/thermal_model.py /lab/
+COPY scripts/load-x86-fan-controller.sh /lab/load-x86-fan-controller.sh
+USER 1000:1000
+ENV LAB_THERMAL=1
+CMD ["python3", "-u", "/lab/lab_manager.py"]

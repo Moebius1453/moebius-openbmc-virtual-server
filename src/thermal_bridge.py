@@ -42,13 +42,29 @@ class ThermalBridge:
         load = 0.0
         source = 'host-off'
         if powered:
-            request = json.loads((self.state / 'thermal-load.json').read_text())
+            try:
+                request = json.loads((self.state / 'thermal-load.json').read_text())
+                if not isinstance(request, dict):
+                    raise ValueError('Thermal input must be an object')
+            except (OSError, ValueError):
+                request = {'load': 1.0, 'source': 'guest-proc-stat', 'received_at': 0}
             load = request['load']
             if isinstance(load, bool) or not isinstance(load, (float, int)):
                 raise ValueError('Thermal load must be numeric')
             if not math.isfinite(load) or not 0 <= load <= 1:
                 raise ValueError('Thermal load must be in [0, 1]')
-            source = 'manual'
+            source = request.get('source', 'manual')
+            if source == 'guest-proc-stat':
+                received = request.get('received_at')
+                if (isinstance(received, bool)
+                        or not isinstance(received, (int, float))
+                        or not math.isfinite(received)
+                        or not 0 <= time.time() - received <= 5):
+                    # Stale telemetry must not make an active host look idle.
+                    load = 1.0
+                    source = 'stale-guest-conservative'
+            elif source != 'manual':
+                raise ValueError('Unknown thermal load source')
         targets = [qmp.call('qom-get', path=self.fan_path,
                             property=f'fan{i}-target') for i in range(4)]
         temperature, rpm = self.model.step(elapsed, load, powered, targets)

@@ -163,6 +163,9 @@ def main():
                 shutdown = client.call('qom-get', path=GPIO_PATH, property='gpioD3')
                 if client.reset_seen:
                     client.reset_seen = False
+                    if thermal is not None:
+                        thermal.fan_path = None
+                        thermal.temperature_path = None
                     recovering_bmc = host is not None
                     previous_reset = None
                     previous_shutdown = False
