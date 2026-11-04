@@ -2,6 +2,12 @@
 
 仅用于隔离热测试BMC。不是物理服务器风扇控制方案。原程序保留不覆盖；服务切换和回退均会短暂中断控制，必须在主机关机时经授权执行。
 
+## 统一实验入口
+
+完整步骤见[REAL-LOAD.md](REAL-LOAD.md)。run-thermal-cycle.py支持--controller及--controller-sha256，在真实PowerGood为0时将已校验程序放入BMC内存，调用装载入口后再启动主机。原有供应商程序与watchdog配置保留。load-x86-fan-controller.sh已在实际BMC验证重复调用不重启相同运行程序。
+
+2026-11-04真实CPU三阶段实验通过升温提速、撤载减速和正常关机。下方2026-11-02记录保留为早期开发过程。
+
 ## 构建与变更范围
 
 scripts/prepare-x86-fan-policy.py仅将occ_active_speed_changes中的两个OccActive=true前提改为真实PowerGood=1，其余事件保留。scripts/build-x86-fan-control.sh备份策略输入、使用既有recipe构建环境增量编译，退出时恢复输入文件。不会写OCC属性。

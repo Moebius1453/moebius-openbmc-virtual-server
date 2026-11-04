@@ -1,6 +1,12 @@
 # Minimal thermal feedback experiment
 
-This experiment is incomplete. Do not treat the current image as an accepted thermal-control deployment.
+## Current result: real CPU cycle
+
+On 2026-11-04 the real Debian CPU experiment completed 120 seconds each of idle, load and cooldown, with mean CPU utilization of 0.17%, 99.99% and 0.18%. Native BMC targets rose from about 5000 to 7200 RPM as the model heated; actual tach feedback followed. Removing CPU load cooled the model to about 36.5 degrees C and reduced targets to 6600 RPM. The guest then completed ACPI shutdown with exit 0, PowerGood 0 and chassis Off.
+
+The x86 policy generator replaces the POWER OCC activation prerequisite with actual PowerGood. Actual CPU samples are published by scripts/forward-guest-load.py. The complete workflow is documented in [REAL-LOAD.md](REAL-LOAD.md). Earlier investigation notes below describe the discovery sequence, not the current feature status.
+
+## Earlier interface investigation
 
 The optional LAB_THERMAL=1 integration feeds a simple thermal model into the QEMU TMP105 temperature property. MAX31785 external feedback separates guest-commanded target RPM from externally calculated actual RPM. OpenBMC still reads the normal Linux hardware-monitoring path and retains fan protection. No sensor D-Bus property is overwritten.
 
