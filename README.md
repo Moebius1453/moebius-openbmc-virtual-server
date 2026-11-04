@@ -26,25 +26,28 @@
 
 ```mermaid
 flowchart LR
-    user["使用者"]
+    operator["使用者"]
     sampler["本机 CPU 采样转发"]
-    subgraph server["Linux / KVM 宿主"]
-        subgraph lab["虚拟整机容器"]
-            bmc["OpenBMC / Witherspoon\n服务、D-Bus、Redfish"]
-            devices["QEMU 虚拟硬件\nGPIO、温度芯片、风扇控制器"]
-            manager["整机管理器\n电源联动与实际状态反馈"]
-            host["Debian 主机\nx86 QEMU / KVM"]
-            model["简单环境模型\n发热、散热、转速惯性"]
-            bmc <-->|"驱动采集与控制"| devices
-            devices <-->|"GPIO / QMP"| manager
-            manager <-->|"启动、ACPI、实际状态"| host
-            devices -->|"目标转速"| model
-            model -->|"温度与实际测速"| devices
+    subgraph server [Linux / KVM 宿主]
+        subgraph lab [虚拟整机容器]
+            bmc["OpenBMC / Witherspoon<br/>服务、D-Bus、Redfish"]
+            devices["QEMU 虚拟硬件<br/>GPIO、温度芯片、风扇控制器"]
+            manager["整机管理器<br/>电源联动与实际状态反馈"]
+            guest["Debian 主机<br/>x86 QEMU / KVM"]
+            model["简单环境模型<br/>发热、散热、转速惯性"]
+            bmc -->|驱动控制| devices
+            devices -->|硬件反馈| bmc
+            devices -->|GPIO 输出| manager
+            manager -->|PowerGood 反馈| devices
+            manager -->|启动与 ACPI 请求| guest
+            guest -->|实际运行状态| manager
+            devices -->|目标转速| model
+            model -->|温度与实际测速| devices
         end
     end
-    user -->|"SSH / Web / Redfish"| bmc
-    host -->|"实际 CPU 使用率"| sampler
-    sampler -->|"负载样本"| model
+    operator -->|SSH / Web / Redfish| bmc
+    guest -->|实际 CPU 使用率| sampler
+    sampler -->|负载样本| model
 ```
 
 主机关闭后 BMC 继续运行；BMC 独立重启时主机可以继续运行。整机管理器负责把 BMC 的电源意图落实到主机，并将实际结果送回虚拟硬件。
