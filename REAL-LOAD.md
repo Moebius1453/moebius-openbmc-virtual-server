@@ -8,6 +8,20 @@ Debian 的真实 CPU 使用率通过 SSH 采样进入环境模型，OpenBMC 根�
 
 在本机设置以下环境变量用于示例：LAB_SERVER、LAB_USER、LAB_BMC_PIN、LAB_GUEST_PIN、LAB_KEY、LAB_STATE。地址与路径取当前部署的实际值。输出文件位于当前目录，已存在时入口拒绝覆盖。
 
+## 三种操作模式
+
+同一入口使用--mode选择操作，默认cycle：
+
+| 模式 | 行为 |
+|---|---|
+| check | 检查BMC Ready、主机关机和x86控制器运行，不上传、不请求开机 |
+| stage | 校验并按需装载--controller指定程序，完成后退出，不请求开机 |
+| cycle | 按需装载后完成真实CPU三阶段实验与关机收尾 |
+
+在下方完整命令中追加--mode check即可短检查；stage需同时传入--controller和--controller-sha256。各次使用不同--output文件。
+
+2026-11-04隔离BMC实测stage两次及check一次成功，同哈希现有程序保持相同PID和启动时间，无服务重启。入口按实际运行路径核对哈希，兼容旧短文件名。不同内容的覆盖继续拒绝。
+
 ## 完整实验
 
 在仓库根目录的 PowerShell 中执行：

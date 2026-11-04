@@ -27,7 +27,12 @@ if __name__ == '__main__':
                    help='Optional local controller binary to stage before powering on')
     p.add_argument('--controller-sha256',
                    help='Required checksum when --controller is supplied')
+    p.add_argument('--mode', choices=('check', 'stage', 'cycle'), default='cycle')
     a = p.parse_args()
+    if a.mode == 'stage' and not a.controller:
+        p.error('stage mode requires --controller and --controller-sha256')
+    if a.mode == 'check' and a.controller:
+        p.error('check mode never uploads; use stage mode')
     controller_data = None
     if a.controller:
         import hashlib
@@ -83,6 +88,13 @@ if __name__ == '__main__':
             raise RuntimeError('Host must initially be powered off')
         if controller_data is not None:
             binary = '/tmp/fan-x86-' + a.controller_sha256
+            pid = command('systemctl show phosphor-fan-control@0.service -p MainPID --value')
+            if pid.isdigit() and int(pid) > 0:
+                running_path = command('readlink /proc/' + pid + '/exe')
+                if running_path.startswith('/tmp/fan-x86-'):
+                    digest = command('sha256sum ' + shlex.quote(running_path)).split()[0]
+                    if digest == a.controller_sha256:
+                        binary = running_path
             with bmc.open_sftp() as sftp:
                 try:
                     with sftp.open(binary) as stream:
@@ -110,6 +122,9 @@ if __name__ == '__main__':
         if '/tmp/fan-x86-' not in controller:
             raise RuntimeError('Load the explicit x86 controller before this experiment')
         command('systemctl is-active phosphor-fan-control@0.service')
+        if a.mode != 'cycle':
+            event('preflight_completed', mode=a.mode, controller=controller)
+            raise SystemExit(0)
         # Set before sending: an interrupted request may already have taken effect.
         requested = True
         command('busctl set-property xyz.openbmc_project.State.Host '
