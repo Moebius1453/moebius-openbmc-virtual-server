@@ -6,7 +6,7 @@
 
 完整步骤见[REAL-LOAD.md](REAL-LOAD.md)。run-thermal-cycle.py支持--controller及--controller-sha256，在真实PowerGood为0时将已校验程序放入BMC内存，调用装载入口后再启动主机。原有供应商程序与watchdog配置保留。load-x86-fan-controller.sh已在实际BMC验证重复调用不重启相同运行程序。
 
-2026-11-04真实CPU三阶段实验通过升温提速、撤载减速和正常关机。下方2026-11-02记录保留为早期开发过程。
+2026-11-04真实CPU三阶段实验通过升温提速、撤载减速和正常关机。同日BMC重启后stage重新上传并启动控制器，check通过。日常使用--mode check、--mode stage和--mode cycle分别检查、装载与运行实验。下方2026-11-02记录保留为早期开发过程。
 
 ## 构建与变更范围
 
