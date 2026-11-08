@@ -18,7 +18,14 @@ if [ "${#paths[@]}" -ne 1 ]; then
     exit 1
 fi
 www="${paths[0]}"
-if [ ! -f "$www/index.html" ] && [ ! -f "$www/index.html.gz" ]; then
+indexes=("$www"/index.html "$www"/index.html.gz "$www"/index.*.html.gz)
+found_index=false
+for index in "${indexes[@]}"; do
+    if [ -f "$index" ]; then
+        found_index=true
+    fi
+done
+if [ "$found_index" != true ]; then
     printf '%s\n' 'Packaged frontend has no index page.' >&2
     exit 1
 fi
